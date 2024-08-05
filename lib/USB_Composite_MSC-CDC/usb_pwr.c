@@ -90,7 +90,7 @@ RESULT PowerOn(void)
   _SetCNTR(wInterrupt_Mask);
   
   /* Wait until RESET flag = 1 (polling) */
-  while((_GetISTR()&ISTR_RESET) == 1);
+  while(!((_GetISTR()&ISTR_RESET)));
   
   /*** Clear pending interrupts ***/
   SetISTR(0);
