@@ -1,6 +1,7 @@
 CROSS_COMPILE?=arm-none-eabi-
 CC=$(CROSS_COMPILE)gcc
 OBJCOPY=$(CROSS_COMPILE)objcopy
+SIZE=$(CROSS_COMPILE)size
 
 ARMCPU=cortex-m3
 STM32MCU=STM32F103x6
@@ -16,7 +17,6 @@ OBJS=	device/generic.o\
 	lib/USB-FS-Device_Lib/usb_regs.o\
 	lib/USB-FS-Device_Lib/usb_sil.o\
 	lib/USB_Composite_MSC-CDC/hw_config.o\
-	lib/USB_Composite_MSC-CDC/mass_mal.o\
 	lib/USB_Composite_MSC-CDC/memory.o\
 	lib/USB_Composite_MSC-CDC/scsi_data.o\
 	lib/USB_Composite_MSC-CDC/usb_bot.o\
@@ -29,33 +29,21 @@ OBJS=	device/generic.o\
 	lib/USB_Composite_MSC-CDC/virtualComPort.o\
 	lib/cmsis/system_stm32f10x.o\
 	lib/spl/src/misc.o\
-	lib/spl/src/stm32f10x_adc.o\
 	lib/spl/src/stm32f10x_bkp.o\
-	lib/spl/src/stm32f10x_can.o\
-	lib/spl/src/stm32f10x_cec.o\
-	lib/spl/src/stm32f10x_crc.o\
-	lib/spl/src/stm32f10x_dac.o\
-	lib/spl/src/stm32f10x_dbgmcu.o\
 	lib/spl/src/stm32f10x_dma.o\
 	lib/spl/src/stm32f10x_exti.o\
 	lib/spl/src/stm32f10x_flash.o\
-	lib/spl/src/stm32f10x_fsmc.o\
 	lib/spl/src/stm32f10x_gpio.o\
-	lib/spl/src/stm32f10x_i2c.o\
 	lib/spl/src/stm32f10x_iwdg.o\
 	lib/spl/src/stm32f10x_pwr.o\
 	lib/spl/src/stm32f10x_rcc.o\
-	lib/spl/src/stm32f10x_rtc.o\
-	lib/spl/src/stm32f10x_sdio.o\
-	lib/spl/src/stm32f10x_spi.o\
 	lib/spl/src/stm32f10x_tim.o\
 	lib/spl/src/stm32f10x_usart.o\
-	lib/spl/src/stm32f10x_wwdg.o\
 	lib/terminal-server/term-srv.o\
 	Startup/startup_stm32f103c8tx.o\
 	main.o
 
-CFLAGS=-std=c99 -Wall -fno-common -mthumb -mcpu=$(ARMCPU) -D$(STM32MCU) -DSTM32F10X_LD\
+CFLAGS=-std=c99 -g -Wall -O2 -fno-common -mthumb -mcpu=$(ARMCPU) -D$(STM32MCU) -DSTM32F10X_LD\
 	-Ilib/cmsis\
 	-Ilib/spl/inc\
 	-Idevice\
@@ -63,7 +51,7 @@ CFLAGS=-std=c99 -Wall -fno-common -mthumb -mcpu=$(ARMCPU) -D$(STM32MCU) -DSTM32F
 	-Ilib/USB-FS-Device_Lib\
 	-Ilib/terminal-server
 
-LDFLAGS=-T$(LINKERSCRIPT) -mcpu=$(ARMCPU) -lc
+LDFLAGS=-T$(LINKERSCRIPT) -mcpu=$(ARMCPU) -lc -g
 
 ifeq ($(V),1)
 QUIET=
@@ -84,6 +72,7 @@ usbfloppy.bin: usbfloppy.elf
 %.elf: $(OBJS)
 	$(QECHO) "LD $@"
 	$(QUIET)$(CC) $(LDFLAGS) -o $@ $^
+	$(QUIET)$(SIZE) $@
 
 %.o:	%.c
 	$(QECHO) "CC $@"
