@@ -37,3 +37,7 @@ int main()
 		DWT_Delay_ms(500);
 	}
 }
+
+void _exit(void)
+{
+}
