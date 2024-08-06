@@ -61,10 +61,10 @@ uint8_t Standard_Inquiry_Data[] =
     0x00,
     0x00,
     /* Vendor Identification */
-    'S', 'T', 'M', ' ', ' ', ' ', ' ', ' ',
+    'U', 'S', 'B', ' ', '5', '.', '2', '5',
     /* Product Identification */
-    'I', 'n', 't', 'e', 'r', 'n', 'a', 'l', ' ',
-    'F', 'l', 'a', 's', 'h', ' ', ' ',
+    '"', ' ', 'F', 'l', 'o', 'p', 'p', 'y', ' ',
+    'D', 'r', 'i', 'v', 'e', ' ', ' ',
     /* Product Revision Level */
     '1', '.', '0', ' '
   };

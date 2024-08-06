@@ -41,6 +41,8 @@
 #include "hw_config.h"
 #include "usb_lib.h"
 #include "usb_istr.h"
+#include <stdio.h>
+#include <string.h>
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
@@ -72,10 +74,17 @@ void NMI_Handler(void)
 *******************************************************************************/
 void HardFault_Handler(void)
 {
-  /* Go to infinite loop when Hard Fault exception occurs */
-  while (1)
-  {
-  }
+	register volatile unsigned int *sp asm ("sp");
+	volatile unsigned int regs[8];
+
+	memcpy(regs, sp, sizeof(unsigned int) * 8);
+	printf("%s R0 %x R1 %x R2 %x R3 %x R12 %x LR %x PC %x xPSR %x\n",
+	       __func__, regs[0], regs[1], regs[2], regs[3],
+	       regs[4], regs[5], regs[6], regs[7]);
+	/* Go to infinite loop when Hard Fault exception occurs */
+	while (1)
+	{
+	}
 }
 
 /*******************************************************************************
@@ -87,10 +96,11 @@ void HardFault_Handler(void)
 *******************************************************************************/
 void MemManage_Handler(void)
 {
-  /* Go to infinite loop when Memory Manage exception occurs */
-  while (1)
-  {
-  }
+	printf("%s\n", __func__);
+	/* Go to infinite loop when Memory Manage exception occurs */
+	while (1)
+	{
+	}
 }
 
 /*******************************************************************************
@@ -102,10 +112,11 @@ void MemManage_Handler(void)
 *******************************************************************************/
 void BusFault_Handler(void)
 {
-  /* Go to infinite loop when Bus Fault exception occurs */
-  while (1)
-  {
-  }
+	printf("%s\n", __func__);
+	/* Go to infinite loop when Bus Fault exception occurs */
+	while (1)
+	{
+	}
 }
 
 /*******************************************************************************
@@ -117,10 +128,11 @@ void BusFault_Handler(void)
 *******************************************************************************/
 void UsageFault_Handler(void)
 {
-  /* Go to infinite loop when Usage Fault exception occurs */
-  while (1)
-  {
-  }
+	printf("%s\n", __func__);
+	/* Go to infinite loop when Usage Fault exception occurs */
+	while (1)
+	{
+	}
 }
 
 /*******************************************************************************

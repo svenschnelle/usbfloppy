@@ -49,8 +49,8 @@
 
 /* Exported macro ------------------------------------------------------------*/
 /* Exported functions ------------------------------------------------------- */
-void Write_Memory (uint8_t lun, uint32_t Memory_Offset, uint32_t Transfer_Length);
-void Read_Memory (uint8_t lun, uint32_t Memory_Offset, uint32_t Transfer_Length);
+int Write_Memory (uint8_t lun, uint32_t Memory_Offset, uint32_t Transfer_Length);
+int Read_Memory (uint8_t lun, uint32_t Memory_Offset, uint32_t Transfer_Length);
 #endif /* __memory_H */
 
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/

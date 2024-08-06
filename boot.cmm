@@ -1,0 +1,7 @@
+system.cpu stm32f103c8
+system.config debugporttype swd
+system.up
+break.reset
+data.load.elf usbfloppy.elf /nocode
+break.set memset /onchip
+g

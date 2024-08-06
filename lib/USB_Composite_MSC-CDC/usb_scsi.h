@@ -95,8 +95,8 @@
 
 
 #define INVALID_COMMAND                             0x20
-#define INVALID_FIELED_IN_COMMAND                   0x24
-#define PARAMETER_LIST_LENGTH_ERROR                 0x1A
+#define INVALID_FIELD_IN_COMMAND		0x24
+#define PARAMETER_LIST_LENGTH_ERROR		0x1A
 #define INVALID_FIELD_IN_PARAMETER_LIST             0x26
 #define ADDRESS_OUT_OF_RANGE                        0x21
 #define MEDIUM_NOT_PRESENT 			    0x3A

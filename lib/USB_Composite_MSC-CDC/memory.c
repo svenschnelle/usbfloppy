@@ -57,6 +57,7 @@
 #include "hw_config.h"
 #include "mass_mal.h"
 #include "usb_lib.h"
+#include <stdio.h>
 
 /* Private typedef -----------------------------------------------------------*/
 /* Private define ------------------------------------------------------------*/
@@ -88,56 +89,62 @@ extern uint32_t Mass_Block_Size[2];
 * Output         : None.
 * Return         : None.
 *******************************************************************************/
-void Read_Memory(uint8_t lun, uint32_t Memory_Offset, uint32_t Transfer_Length)
+int Read_Memory(uint8_t lun, uint32_t Memory_Offset, uint32_t Transfer_Length)
 {
-  static uint32_t Offset, Length;
+	static uint32_t Offset, Length;
+	int ret;
 
-  if (TransferState == TXFR_IDLE )
-  {
-    Offset = Memory_Offset * Mass_Block_Size[lun];
-    Length = Transfer_Length * Mass_Block_Size[lun];
-    TransferState = TXFR_ONGOING;
-  }
+	if (TransferState == TXFR_IDLE ) {
+		Offset = Memory_Offset * Mass_Block_Size[lun];
+		Length = Transfer_Length * Mass_Block_Size[lun];
+		TransferState = TXFR_ONGOING;
+	}
 
-  if (TransferState == TXFR_ONGOING )
-  {
-    if (!Block_Read_count)
-    {
-      MAL_Read(lun ,
-               Offset ,
-               Data_Buffer,
-               Mass_Block_Size[lun]);
+	if (TransferState == TXFR_ONGOING) {
+		if (!Block_Read_count) {
+			ret = MAL_Read(lun ,
+				       Offset ,
+				       Data_Buffer,
+				       Mass_Block_Size[lun]);
+			if (ret) {
+				Block_Read_count = 0;
+				Block_offset = 0;
+				Offset = 0;
+				Bot_State = BOT_DATA_IN_LAST;
+				TransferState = TXFR_IDLE;
+				return ret;
+			}
 
-      USB_SIL_Write(MSC_IN_EP, (uint8_t *)Data_Buffer, BULK_MAX_PACKET_SIZE);
+			USB_SIL_Write(MSC_IN_EP, (uint8_t *)Data_Buffer, BULK_MAX_PACKET_SIZE);
 
-      Block_Read_count = Mass_Block_Size[lun] - BULK_MAX_PACKET_SIZE;
-      Block_offset = BULK_MAX_PACKET_SIZE;
-    }
-    else
-    {
-      USB_SIL_Write(MSC_IN_EP, (uint8_t *)Data_Buffer + Block_offset, BULK_MAX_PACKET_SIZE);
+			Block_Read_count = Mass_Block_Size[lun] - BULK_MAX_PACKET_SIZE;
+			Block_offset = BULK_MAX_PACKET_SIZE;
+		} else {
+			USB_SIL_Write(MSC_IN_EP, (uint8_t *)Data_Buffer + Block_offset, BULK_MAX_PACKET_SIZE);
 
-      Block_Read_count -= BULK_MAX_PACKET_SIZE;
-      Block_offset += BULK_MAX_PACKET_SIZE;
-    }
+			Block_Read_count -= BULK_MAX_PACKET_SIZE;
+			Block_offset += BULK_MAX_PACKET_SIZE;
+		}
 
-    SetEPTxCount(MSC_EP_IDX, BULK_MAX_PACKET_SIZE);
-    SetEPTxStatus(MSC_EP_IDX, EP_TX_VALID);
-    Offset += BULK_MAX_PACKET_SIZE;
-    Length -= BULK_MAX_PACKET_SIZE;
+		SetEPTxCount(MSC_EP_IDX, BULK_MAX_PACKET_SIZE);
+		SetEPTxStatus(MSC_EP_IDX, EP_TX_VALID);
+		Offset += BULK_MAX_PACKET_SIZE;
+		Length -= BULK_MAX_PACKET_SIZE;
 
-    CSW.dDataResidue -= BULK_MAX_PACKET_SIZE;
-    //Led_RW_ON();
-  }
-  if (Length == 0)
-  {
-    Block_Read_count = 0;
-    Block_offset = 0;
-    Offset = 0;
-    Bot_State = BOT_DATA_IN_LAST;
-    TransferState = TXFR_IDLE;
-    //Led_RW_OFF();
-  }
+		CSW.dDataResidue -= BULK_MAX_PACKET_SIZE;
+		//Led_RW_ON();
+	}
+
+//	printf("%s: Length remaining %x\n", __func__, (int)Length);
+	if (Length == 0) {
+		Block_Read_count = 0;
+		Block_offset = 0;
+		Offset = 0;
+		Bot_State = BOT_DATA_IN_LAST;
+		TransferState = TXFR_IDLE;
+		//Led_RW_OFF();
+	}
+	return 0;
 }
 
 /*******************************************************************************
@@ -147,52 +154,51 @@ void Read_Memory(uint8_t lun, uint32_t Memory_Offset, uint32_t Transfer_Length)
 * Output         : None.
 * Return         : None.
 *******************************************************************************/
-void Write_Memory (uint8_t lun, uint32_t Memory_Offset, uint32_t Transfer_Length)
+int Write_Memory (uint8_t lun, uint32_t Memory_Offset, uint32_t Transfer_Length)
 {
+	static uint32_t W_Offset, W_Length;
+	uint32_t temp =  Counter + 64;
+	int ret;
 
-  static uint32_t W_Offset, W_Length;
+	if (TransferState == TXFR_IDLE ) {
+		W_Offset = Memory_Offset * Mass_Block_Size[lun];
+		W_Length = Transfer_Length * Mass_Block_Size[lun];
+		MAL_StartWrite(lun, Memory_Offset, Transfer_Length);
+		TransferState = TXFR_ONGOING;
+	}
 
-  uint32_t temp =  Counter + 64;
+	if (TransferState == TXFR_ONGOING ) {
+		for (Idx = 0 ; Counter < temp; Counter++)
+			*((uint8_t *)Data_Buffer + Counter) = Bulk_Data_Buff[Idx++];
 
-  if (TransferState == TXFR_IDLE )
-  {
-    W_Offset = Memory_Offset * Mass_Block_Size[lun];
-    W_Length = Transfer_Length * Mass_Block_Size[lun];
-    TransferState = TXFR_ONGOING;
-  }
+		W_Offset += Data_Len;
+		W_Length -= Data_Len;
 
-  if (TransferState == TXFR_ONGOING )
-  {
+		if (!(W_Length % Mass_Block_Size[lun])) {
+			Counter = 0;
+			ret = MAL_Write(lun ,
+					W_Offset - Mass_Block_Size[lun],
+					Data_Buffer,
+					Mass_Block_Size[lun], W_Length == 0 ? 1 : 0);
+			if (ret) {
+				Counter = 0;
+				TransferState = TXFR_IDLE;
+				Set_CSW (CSW_CMD_FAILED, SEND_CSW_DISABLE);
+				return ret;
+			}
+		}
 
-    for (Idx = 0 ; Counter < temp; Counter++)
-    {
-      *((uint8_t *)Data_Buffer + Counter) = Bulk_Data_Buff[Idx++];
-    }
+		CSW.dDataResidue -= Data_Len;
+		SetEPRxStatus(MSC_EP_IDX, EP_RX_VALID); /* enable the next transaction*/
+		//Led_RW_ON();
+	}
 
-    W_Offset += Data_Len;
-    W_Length -= Data_Len;
-
-    if (!(W_Length % Mass_Block_Size[lun]))
-    {
-      Counter = 0;
-      MAL_Write(lun ,
-                W_Offset - Mass_Block_Size[lun],
-                Data_Buffer,
-                Mass_Block_Size[lun]);
-    }
-
-    CSW.dDataResidue -= Data_Len;
-    SetEPRxStatus(MSC_EP_IDX, EP_RX_VALID); /* enable the next transaction*/
-    //Led_RW_ON();
-  }
-
-  if ((W_Length == 0) || (Bot_State == BOT_CSW_Send))
-  {
-    Counter = 0;
-    Set_CSW (CSW_CMD_PASSED, SEND_CSW_ENABLE);
-    TransferState = TXFR_IDLE;
-    //Led_RW_OFF();
-  }
+	if ((W_Length == 0) || (Bot_State == BOT_CSW_Send)) {
+		Counter = 0;
+		Set_CSW (CSW_CMD_PASSED, SEND_CSW_ENABLE);
+		TransferState = TXFR_IDLE;
+		//Led_RW_OFF();
+	}
+	return 0;
 }
 /************************ (C) COPYRIGHT STMicroelectronics *****END OF FILE****/
-

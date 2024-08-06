@@ -1,5 +1,6 @@
 CROSS_COMPILE?=arm-none-eabi-
 CC=$(CROSS_COMPILE)gcc
+LD=$(CROSS_COMPILE)ld
 OBJCOPY=$(CROSS_COMPILE)objcopy
 SIZE=$(CROSS_COMPILE)size
 
@@ -9,7 +10,6 @@ LINKERSCRIPT=FLASH.ld
 
 OBJS=	device/generic.o\
 	device/stm32_it.o\
-	device/terminal.o\
 	lib/USB-FS-Device_Lib/usb_core.o\
 	lib/USB-FS-Device_Lib/usb_init.o\
 	lib/USB-FS-Device_Lib/usb_int.o\
@@ -26,7 +26,6 @@ OBJS=	device/generic.o\
 	lib/USB_Composite_MSC-CDC/usb_prop.o\
 	lib/USB_Composite_MSC-CDC/usb_pwr.o\
 	lib/USB_Composite_MSC-CDC/usb_scsi.o\
-	lib/USB_Composite_MSC-CDC/virtualComPort.o\
 	lib/cmsis/system_stm32f10x.o\
 	lib/spl/src/misc.o\
 	lib/spl/src/stm32f10x_bkp.o\
@@ -39,11 +38,10 @@ OBJS=	device/generic.o\
 	lib/spl/src/stm32f10x_rcc.o\
 	lib/spl/src/stm32f10x_tim.o\
 	lib/spl/src/stm32f10x_usart.o\
-	lib/terminal-server/term-srv.o\
 	Startup/startup_stm32f103c8tx.o\
 	main.o
 
-CFLAGS=-std=c99 -g -Wall -O2 -fno-common -mthumb -mcpu=$(ARMCPU) -D$(STM32MCU) -DSTM32F10X_LD\
+CFLAGS=-g -Wall -Wextra -Wno-unused-parameter -Os -fno-common -ffreestanding -mthumb -mcpu=$(ARMCPU) -D$(STM32MCU) -DSTM32F10X_LD\
 	-Ilib/cmsis\
 	-Ilib/spl/inc\
 	-Idevice\
@@ -51,7 +49,7 @@ CFLAGS=-std=c99 -g -Wall -O2 -fno-common -mthumb -mcpu=$(ARMCPU) -D$(STM32MCU) -
 	-Ilib/USB-FS-Device_Lib\
 	-Ilib/terminal-server
 
-LDFLAGS=-T$(LINKERSCRIPT) -mcpu=$(ARMCPU) -lc -g
+LDFLAGS=-T$(LINKERSCRIPT) -g -nostdlib
 
 ifeq ($(V),1)
 QUIET=
@@ -71,7 +69,7 @@ usbfloppy.bin: usbfloppy.elf
 
 %.elf: $(OBJS)
 	$(QECHO) "LD $@"
-	$(QUIET)$(CC) $(LDFLAGS) -o $@ $^
+	$(QUIET)$(LD) $(LDFLAGS) -o $@ $^
 	$(QUIET)$(SIZE) $@
 
 %.o:	%.c

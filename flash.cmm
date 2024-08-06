@@ -1,0 +1,12 @@
+system.down
+system.cpu stm32f103c8
+system.config debugporttype swd
+system.up
+flash.reset
+flash.create 1. 0x08000000++0xffff 0x400 TARGET Word
+flash.target 0x20000000 0x20001000 0x400 ~~/demo/arm/flash/word/stm32f100.bin
+flash.reprogram all /erase
+data.load.elf /home/svens/devel/micro/stm32/usbfloppy/usbfloppy.elf
+flash.reprogram off
+system.up
+g

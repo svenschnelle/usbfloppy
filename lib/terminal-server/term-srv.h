@@ -12,7 +12,7 @@
 #define MAX_COMMAND_HISTORY_LENGTH          (3)     // Command count in history (int8_t MAX)
 #define MAX_COMMAND_LENGTH                  (64)    // Command length in bytes (int16_t MAX)
 //https://en.wikipedia.org/wiki/ANSI_escape_code#Colors
-#define GREETING_STRING                     ("\x1B[36mBluePill@Composite: \x1B[0m")
+#define GREETING_STRING                     ("\x1B[36m> \x1B[0m")
 #define UNKNOWN_COMMAND_STRING              ("\x1B[31m - command not found\x1B[0m")
 
 typedef struct {

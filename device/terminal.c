@@ -8,6 +8,8 @@
 #include "terminal.h"
 #include <string.h>
 #include "virtualComPort.h"
+#include <stdint.h>
+#include <stdio.h>
 
 void term_send_data(const char *data, int16_t size)
 {
@@ -45,10 +47,7 @@ void help_cmd(const char *data)
 
 term_srv_cmd_t cmd_list[] =
 {
-	{ .cmd = "test-arg", .len = 8, .handler = test_cmd1 },
-	{ .cmd = "command", .len = 7, .handler = test_cmd2 },
-	{ .cmd = "toggle", .len = 6, .handler = toggle_cmd },
-	{ .cmd = "help", .len = 4, .handler = help_cmd},
+	{ .cmd = "help", .len = 4, .handler = help_cmd },
 };
 
 size_t cmd_count = sizeof(cmd_list) / sizeof(cmd_list[0]);

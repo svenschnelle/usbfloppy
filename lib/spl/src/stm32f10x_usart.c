@@ -193,6 +193,7 @@ void USART_Init(USART_TypeDef* USARTx, USART_InitTypeDef* USART_InitStruct)
   assert_param(IS_USART_STOPBITS(USART_InitStruct->USART_StopBits));
   assert_param(IS_USART_PARITY(USART_InitStruct->USART_Parity));
   assert_param(IS_USART_MODE(USART_InitStruct->USART_Mode));
+
   assert_param(IS_USART_HARDWARE_FLOW_CONTROL(USART_InitStruct->USART_HardwareFlowControl));
   /* The hardware flow control is available only for USART1, USART2 and USART3 */
   if (USART_InitStruct->USART_HardwareFlowControl != USART_HardwareFlowControl_None)
