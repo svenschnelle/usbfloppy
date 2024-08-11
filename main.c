@@ -67,13 +67,12 @@
 
 #define FDC_CMD_SPECIFY		0x03
 #define FDC_CMD_WRITE		0x05
-#define FDC_CMD_READ		0x06
+#define FDC_CMD_READ_DATA	0x06
 #define FDC_CMD_SENSE_INT	0x08
 #define FDC_CMD_DUMPREG		0x0e
 #define FDC_CMD_VERSION		0x10
 #define FDC_CMD_CONFIGURE	0x13
-#define FDC_CMD_READ_ID_MFM	0x4a
-#define FDC_CMD_READ_ID_FM	0x0a
+#define FDC_CMD_READ_ID		0x0a
 #define FDC_CMD_SEEK		0x0f
 #define FDC_CMD_RECALIBRATE	0x07
 #define FDC_CMD_RELSEEK		0x8f
@@ -102,10 +101,221 @@ uint32_t Mass_Block_Size[2];
 uint32_t Mass_Block_Count[2];
 
 struct chs {
-	int c;
-	int h;
-	int s;
+	uint8_t c;
+	uint8_t h;
+	uint8_t s;
 } write_start;
+
+struct fdc_st0 {
+	uint8_t ds:2;
+	uint8_t h:1;
+	uint8_t :1;
+	uint8_t ec:1;
+	uint8_t se:1;
+	uint8_t ic:2;
+};
+
+struct fdc_st1 {
+	uint8_t ma:1;
+	uint8_t nw:1;
+	uint8_t nd:1;
+	uint8_t :1;
+	uint8_t or:1;
+	uint8_t de:1;
+	uint8_t :1;
+	uint8_t en:1;
+};
+
+struct fdc_st2 {
+	uint8_t md:1;
+	uint8_t bc:1;
+	uint8_t :2;
+	uint8_t wc:1;
+	uint8_t dd:1;
+	uint8_t cm:1;
+	uint8_t :1;
+};
+
+struct fdc_st3 {
+	uint8_t ds:2;
+	uint8_t hd:1;
+	uint8_t :1;
+	uint8_t t0:1;
+	uint8_t :1;
+	uint8_t wp:1;
+	uint8_t :1;
+};
+
+struct fdc_st {
+	struct fdc_st0 st0;
+	struct fdc_st1 st1;
+	struct fdc_st2 st2;
+};
+
+struct fdc_read_data_cmd {
+	uint8_t cmd:6;
+	uint8_t mfm:1;
+	uint8_t mt:1;
+
+	uint8_t ds:2;
+	uint8_t hds:1;
+	uint8_t :5;
+
+	struct chs chs;
+	uint8_t n;
+	uint8_t eot;
+	uint8_t gpl;
+	uint8_t dtl;
+};
+
+struct fdc_read_data_result {
+	struct fdc_st st;
+	struct chs chs;
+	uint8_t n;
+};
+
+struct fdc_write_data_cmd {
+	uint8_t cmd:6;
+	uint8_t mfm:1;
+	uint8_t mt:1;
+
+	uint8_t ds:2;
+	uint8_t hds:1;
+	uint8_t :5;
+
+	struct chs chs;
+	uint8_t n;
+	uint8_t eot;
+	uint8_t gpl;
+	uint8_t dtl;
+};
+
+struct fdc_sense_int_cmd {
+	uint8_t cmd;
+};
+
+struct fdc_sense_int_result {
+	struct fdc_st0 st0;
+	uint8_t pcn;
+};
+
+struct fdc_write_data_result {
+	struct fdc_st st;
+	struct chs chs;
+	uint8_t n;
+};
+
+struct fdc_readid_cmd {
+	uint8_t cmd:6;
+	uint8_t mfm:1;
+	uint8_t :1;
+
+	uint8_t ds:2;
+	uint8_t hds:1;
+	uint8_t :5;
+};
+
+struct fdc_readid_result {
+	struct fdc_st st;
+	struct chs chs;
+	uint8_t n;
+};
+
+struct fdc_seek_cmd {
+	uint8_t cmd;
+
+	uint8_t	ds:2;
+	uint8_t	hds:1;
+	uint8_t :5;
+
+	uint8_t	ncn;
+};
+
+struct fdc_recalibrate_cmd {
+	uint8_t cmd;
+
+	uint8_t ds:2;
+	uint8_t :6;
+};
+
+struct fdc_specify_cmd {
+	uint8_t cmd;
+
+	uint8_t hut:4;
+	uint8_t srt:4;
+
+	uint8_t nd:1;
+	uint8_t hlt:7;
+};
+
+struct fdc_configure_cmd {
+	uint8_t cmd;
+	uint8_t null;
+
+	uint8_t fifothr:4;
+	uint8_t poll:1;
+	uint8_t efifo:1;
+	uint8_t eis:1;
+	uint8_t :1;
+	uint8_t pretrk;
+};
+
+struct fdc_format_track_cmd {
+	uint8_t cmd:6;
+	uint8_t mfm:1;
+	uint8_t :1;
+
+	uint8_t ds:2;
+	uint8_t hds:1;
+	uint8_t :5;
+
+	uint8_t d;
+	struct chs chs;
+	uint8_t n;
+};
+
+struct fdc_format_track_result {
+	struct fdc_st st;
+	uint8_t undefined[4];
+};
+
+struct fdc_sense_drive_status_cmd {
+	uint8_t cmd;
+	uint8_t ds:2;
+	uint8_t hds:1;
+};
+
+struct fdc_sense_drive_status_result {
+	struct fdc_st3 st3;
+};
+
+struct fdc_ctx {
+	union {
+		struct fdc_read_data_cmd read_data;
+		struct fdc_write_data_cmd write_data;
+		struct fdc_sense_int_cmd sense_int;
+		struct fdc_readid_cmd readid;
+		struct fdc_seek_cmd seek;
+		struct fdc_recalibrate_cmd recalibrate;
+		struct fdc_specify_cmd specify;
+		struct fdc_configure_cmd configure;
+		struct fdc_format_track_cmd format_track;
+		struct fdc_sense_drive_status_cmd sense_drive_status;
+	} cmd;
+	union {
+		struct fdc_read_data_result read_data;
+		struct fdc_write_data_result write_data;
+		struct fdc_sense_int_result sense_int;
+		struct fdc_readid_result readid;
+		struct fdc_format_track_result format_track;
+		struct fdc_sense_drive_status_result sense_drive_status;
+	} result;
+	uint8_t	*data;
+	int	cmdlen;
+	int	datalen;
+	int	resultlen;
+
+};
 
 struct gpio_config_data {
 	GPIO_TypeDef *gpio;
@@ -665,13 +875,11 @@ static int fdc_data_write_phase(uint8_t *in, int len)
 	GPIOA->BRR = PIN_TC;
 	GPIOB->BSRR = PIN_CS;
 	if (n < len)
-		printf("%s: short read: %d out of %d bytes\n", __func__, n, len);
+		printf("%s: short write: %d out of %d bytes\n", __func__, n, len);
 	return n;
 }
 
-static int fdc_command(const uint8_t *command, int len,
-		       uint8_t *data, int dlen,
-		       uint8_t *result, int rlen)
+static int fdc_command(struct fdc_ctx *ctx)
 {
 	int ret;
 
@@ -680,25 +888,25 @@ static int fdc_command(const uint8_t *command, int len,
 	if (ret)
 		return ret;
 
-	for (int i = 0; i < len; i++) {
+	for (int i = 0; i < ctx->cmdlen; i++) {
 		ret = fdc_wait_data_write_ready(FDC_TIMEOUT);
 		if (ret)
 			return ret;
-		fdc_write_reg(FDC_REG_FIFO, command[i]);
+		fdc_write_reg(FDC_REG_FIFO, ((uint8_t *)&ctx->cmd)[i]);
 	}
 
-	switch (command[0] & 0xf) {
-	case FDC_CMD_READ:
-		ret = fdc_data_read_phase(data, dlen);
+	switch (((uint8_t *)&ctx->cmd)[0] & 0xf) {
+	case FDC_CMD_READ_DATA:
+		ret = fdc_data_read_phase(ctx->data, ctx->datalen);
 		break;
 	case FDC_CMD_WRITE:
-		ret = fdc_data_write_phase(data, dlen);
+		ret = fdc_data_write_phase(ctx->data, ctx->datalen);
 		break;
 	default:
 		break;
 	}
 
-	switch (command[0]) {
+	switch (((uint8_t *)&ctx->cmd)[0] & 0xf) {
 	case FDC_CMD_SPECIFY:
 	case FDC_CMD_SENSE_INT:
 	case FDC_CMD_CONFIGURE:
@@ -710,7 +918,7 @@ static int fdc_command(const uint8_t *command, int len,
 		break;
 	}
 
-	ret = fdc_result_phase(result, rlen);
+	ret = fdc_result_phase((uint8_t *)&ctx->result, ctx->resultlen);
 	if (ret < 0)
 		return ret;
 
@@ -720,75 +928,88 @@ static int fdc_command(const uint8_t *command, int len,
 	return 0;
 }
 
-int fdc_sense_int(uint8_t *status)
+int fdc_sense_int(struct fdc_sense_int_result *result)
 {
-	static const uint8_t cmd[] = { FDC_CMD_SENSE_INT };
+	struct fdc_ctx ctx = {
+		.cmdlen = sizeof(struct fdc_sense_int_cmd),
+		.resultlen = sizeof(struct fdc_sense_int_result),
+		.cmd.sense_int.cmd = FDC_CMD_SENSE_INT
+	};
+	int ret;
 
-	status[0] = 0;
-	status[1] = 0;
-	return fdc_command(cmd, sizeof(cmd), NULL, 0, status, 2);
+	ret = fdc_command(&ctx);
+	if (ret)
+		return ret;
+	*result = ctx.result.sense_int;
+	return 0;
 }
 
-static void print_fdc_st0(const char *prefix, uint8_t st0)
+static void print_fdc_st0(const char *prefix, struct fdc_st0 *st0)
 {
 	static const char *ics[] = { "Normal Execution", "Abnormal Termination", "Invalid Command", "Abnormal Termination (Polling)" };
 
-	if ((st0 >> 6) == 0)
+	if ((st0->ic >> 6) == 0)
 		return;
 
-	printf("%s: ST0 %x IC=%s %s%sHead %d DSEL %d\n", prefix, st0, ics[st0 >> 6],
-	       st0 & 0x20 ? "Seek End " : "",
-	       st0 & 0x10 ? "Equipment Check " : "",
-	       (st0 >> 2) & 1,
-	       st0 & 3);
+	printf("%s: ST0 IC=%s %s%sHead %d DSEL %d\n", prefix, ics[st0->ic],
+	       st0->se ? "Seek End " : "",
+	       st0->ec ? "Equipment Check " : "",
+	       st0->h,
+	       st0->ds);
 }
 
-static void print_fdc_status(const char *prefix, uint8_t st0, uint8_t st1, uint8_t st2)
+static void print_fdc_status(const char *prefix, struct fdc_st *st)
 {
-	if ((st0 >> 6) == 0)
+	if ((st->st0.ic >> 6) == 0)
 		return;
 
-	print_fdc_st0(prefix, st0);
-	printf("%s: ST1 %x %s %s %s %s %s %s\n", prefix, st1,
-	       st1 & 0x80 ? "End of Cyclinder " : "",
-	       st1 & 0x20 ? "Data Error " : "",
-	       st1 & 0x10 ? "Over/Underrun " : "",
-	       st1 & 0x04 ? "No Data " : "",
-	       st1 & 0x02 ? "Not Writable " : "",
-	       st1 & 0x01 ? "Missing Address Mark " : "");
-	printf("%s: ST2 %x %s%s%s%s%s\n", prefix, st2,
-	       st2 & 0x40 ? "Control Mark " : "",
-	       st2 & 0x20 ? "Data Error in Data Field " : "",
-	       st2 & 0x10 ? "Wrong Cylinder " : "",
-	       st2 & 0x02 ? "Bad Cylinder " : "",
-	       st2 & 0x01 ? "Missing DAM " : "");
+	print_fdc_st0(prefix, &st->st0);
+	printf("%s: ST1 %s %s %s %s %s %s\n", prefix,
+	       st->st1.en ? "End of Cyclinder " : "",
+	       st->st1.de ? "Data Error " : "",
+	       st->st1.or ? "Over/Underrun " : "",
+	       st->st1.nd ? "No Data " : "",
+	       st->st1.nw ? "Not Writable " : "",
+	       st->st1.ma ? "Missing Address Mark " : "");
+	printf("%s: ST2 %s%s%s%s%s\n", prefix,
+	       st->st2.cm ? "Control Mark " : "",
+	       st->st2.dd ? "Data Error in Data Field " : "",
+	       st->st2.wc ? "Wrong Cylinder " : "",
+	       st->st2.bc ? "Bad Cylinder " : "",
+	       st->st2.md ? "Missing DAM " : "");
 }
 
 void fdc_readid(void)
 {
 	static const int sector_sizes[8] = { 128, 256, 512, 1024, 2048, 4096, 8192, 16384 };
-	static const uint8_t cmd[] = { FDC_CMD_READ_ID_MFM, 0 };
-	uint8_t status[2];
-	uint8_t regs[7];
+	struct fdc_ctx ctx = {
+		.cmdlen = sizeof(struct fdc_readid_cmd),
+		.resultlen = sizeof(struct fdc_readid_result),
+		.cmd.readid.cmd = FDC_CMD_READ_ID,
+		.cmd.readid.mfm = 1
+	};
+	struct fdc_sense_int_result status;
 	int ret;
 
-	ret = fdc_command(cmd, sizeof(cmd), NULL, 0, regs, sizeof(regs));
+	ret = fdc_command(&ctx);
 	if (ret) {
 		printf("%s: fdc_command: %d\n", __func__, ret);
 		return;
 	}
 
-	ret = fdc_sense_int(status);
+	ret = fdc_sense_int(&status);
 	if (ret) {
 		printf("%s: fdc_sense_int: %d\n", __func__, ret);
 		return;
 	}
 
-	print_fdc_status(__func__, regs[0], regs[1], regs[2]);
+	print_fdc_status(__func__, &ctx.result.readid.st);
 
 	printf("%s: Cyl %d Head %d Sector %d %d bytes/sector\n", __func__,
-	       regs[3], regs[4], regs[5],
-	       sector_sizes[regs[6] & 7]);
+	       ctx.result.readid.chs.c,
+	       ctx.result.readid.chs.h,
+	       ctx.result.readid.chs.s,
+	       sector_sizes[ctx.result.readid.n & 7]);
 }
 
 void fdc_dsel(int dsel)
@@ -807,11 +1028,15 @@ void fdc_dsel(int dsel)
 
 void fdc_seek(int track)
 {
-	uint8_t cmd[] = { FDC_CMD_SEEK, 0, track };
-	uint8_t status[2];
+	struct fdc_ctx ctx = {
+		.cmdlen = sizeof(struct fdc_seek_cmd),
+		.cmd.seek.cmd = FDC_CMD_SEEK,
+		.cmd.seek.ncn = track
+	};
+	struct fdc_sense_int_result status;
 	int ret;
 
-	ret = fdc_command(cmd, sizeof(cmd), NULL, 0, NULL, 0);
+	ret = fdc_command(&ctx);
 	if (ret) {
 		printf("%s: fdc_command: %d\n", __func__, ret);
 		return;
@@ -819,188 +1044,183 @@ void fdc_seek(int track)
 
 	fdc_wait_interrupt();
 
-	ret = fdc_sense_int(status);
+	ret = fdc_sense_int(&status);
 	if (ret) {
 		printf("%s: fdc_sense_int: %d\n", __func__, ret);
 		return;
 	}
-	print_fdc_st0(__func__, status[0]);
-//	printf("%s: pcn=%x\n", __func__, status[1]);
+	print_fdc_st0(__func__, &status.st0);
+//	printf("%s: pcn=%x\n", __func__, status.pcn);
 }
 
-void fdc_relseek(int num)
-{
-	uint8_t cmd[] = { FDC_CMD_RELSEEK, 0, 0 };
-	uint8_t status[2];
-	int ret;
-
-	if (num < 0) {
-		cmd[0] |= 0x40;
-		num = -num;
-	}
-	cmd[2] = num;
-
-	ret = fdc_command(cmd, sizeof(cmd), NULL, 0, NULL, 0);
-	if (ret) {
-		printf("%s: fdc_command: %d\n", __func__, ret);
-		return;
-	}
-
-	ret = fdc_sense_int(status);
-	if (ret) {
-		printf("%s: fdc_sense_int: %d\n", __func__, ret);
-		return;
-	}
-	printf("status=%x, pcn=%x\n", status[0], status[1]);
-}
 
 void fdc_recalibrate(void)
 {
-	static const uint8_t cmd[] = { FDC_CMD_RECALIBRATE, 0 };
-	uint8_t status[2];
+	struct fdc_ctx ctx = {
+		.cmdlen = sizeof(struct fdc_recalibrate_cmd),
+		.cmd.recalibrate.cmd = FDC_CMD_RECALIBRATE
+	};
+	struct fdc_sense_int_result status;
 	int ret;
 
-	ret = fdc_command(cmd, sizeof(cmd), NULL, 0, NULL, 0);
+	ret = fdc_command(&ctx);
 	if (ret) {
 		printf("%s: fdc_command: %d\n", __func__, ret);
 		return;
 	}
 
-	ret = fdc_sense_int(status);
+	ret = fdc_sense_int(&status);
 	if (ret) {
 		printf("%s: fdc_sense_int: %d\n", __func__, ret);
 		return;
 	}
-	print_fdc_st0(__func__, status[0]);
-	printf("%s: pcn=%x\n", __func__, status[1]);
+	print_fdc_st0(__func__, &status.st0);
+	printf("%s: pcn=%x\n", __func__, status.pcn);
 }
 
 void fdc_specify(int srt, int hut, int hlt, int nd)
 {
-	uint8_t cmd[] = { FDC_CMD_SPECIFY, 0, 0 };
-	uint8_t status[2];
+	struct fdc_ctx ctx = {
+		.cmdlen = sizeof(struct fdc_specify_cmd),
+		.cmd.specify.cmd = FDC_CMD_SPECIFY,
+		.cmd.specify.srt = srt,
+		.cmd.specify.hut = hut,
+		.cmd.specify.hlt = hlt,
+		.cmd.specify.nd = nd
+	};
+	struct fdc_sense_int_result status;
 	int ret;
 
-	cmd[1] = ((srt & 0xf) << 4) | (hut & 0x0f);
-	cmd[2] = (hlt << 1) | (nd & 1);
-
-	ret = fdc_command(cmd, sizeof(cmd), NULL, 0, NULL, 0);
+	ret = fdc_command(&ctx);
 	if (ret) {
 		printf("%s: fdc_command: %d\n", __func__, ret);
 		return;
 	}
 
-	ret = fdc_sense_int(status);
+	ret = fdc_sense_int(&status);
 	if (ret) {
 		printf("%s: fdc_sense_int: %d\n", __func__, ret);
 		return;
 	}
-	print_fdc_st0(__func__, status[0]);
-	printf("%s: pcn=%x\n", __func__, status[1]);
+	print_fdc_st0(__func__, &status.st0);
+	printf("%s: pcn=%x\n", __func__, status.pcn);
 }
 
 void fdc_configure(int eis, int efifo, int poll, int threshold, int pretrk)
 {
-	uint8_t cmd[] = { FDC_CMD_CONFIGURE, 0, 0, 0 };
-	uint8_t status[2];
+	struct fdc_ctx ctx = {
+		.cmdlen = sizeof(struct fdc_configure_cmd),
+		.cmd.configure.cmd = FDC_CMD_CONFIGURE,
+		.cmd.configure.eis = eis,
+		.cmd.configure.efifo = efifo,
+		.cmd.configure.poll = poll,
+		.cmd.configure.fifothr = threshold,
+		.cmd.configure.pretrk = pretrk
+	};
+	struct fdc_sense_int_result status;
 	int ret;
 
-	if (eis)
-		cmd[2] |= 0x40;
-	if (efifo)
-		cmd[2] |= 0x20;
-	if (poll)
-		cmd[2] |= 0x10;
-	cmd[2] |= (threshold & 0xf);
-	cmd[3] = pretrk;
-
-	ret = fdc_command(cmd, sizeof(cmd), NULL, 0, NULL, 0);
+	ret = fdc_command(&ctx);
 	if (ret) {
 		printf("%s: fdc_command: %d\n", __func__, ret);
 		return;
 	}
 
 	if (fdc_int_pending()) {
-		ret = fdc_sense_int(status);
+		ret = fdc_sense_int(&status);
 		if (ret) {
 			printf("%s: fdc_sense_int: %d\n", __func__, ret);
 			return;
 		}
-		print_fdc_st0(__func__, status[0]);
-		printf("%s: pcn=%x\n", __func__, status[1]);
+		print_fdc_st0(__func__, &status.st0);
+		printf("%s: pcn=%x\n", __func__, status.pcn);
 	}
 }
 
 int fdc_read(struct chs *chs, int last_sector, uint8_t *out, int len)
 {
-	uint8_t cmd[9], result[7], status[2];
+	struct fdc_ctx ctx = { .cmd.read_data.cmd = FDC_CMD_READ_DATA,
+		.cmdlen = sizeof(struct fdc_read_data_cmd),
+		.resultlen = sizeof(struct fdc_read_data_result),
+		.data = out,
+		.datalen = len,
+		.cmd.read_data.mt = 1,
+		.cmd.read_data.mfm = 1,
+		.cmd.read_data.hds = chs->h,
+		.cmd.read_data.chs = *chs,
+		.cmd.read_data.n = 2,
+		.cmd.read_data.eot = last_sector,
+		.cmd.read_data.gpl = 0x2a,
+		.cmd.read_data.dtl = 0xff
+	};
+	struct fdc_sense_int_result status;
 	int ret;
 
-	cmd[0] = FDC_CMD_READ | 0x40 | 0x80;	// MFM + MT
-	cmd[1] = ((chs->h & 1) << 2);		// DSH
-	cmd[2] = chs->c;			// C
-	cmd[3] = (chs->h & 1);			// H
-	cmd[4] = chs->s;			// R
-	cmd[5] = 2;				// N 512 bytes
-	cmd[6] = last_sector;			// EOT
-	cmd[7] = 0x2a;				// GPL
-	cmd[8] = 0xff;				// DTL
-
-	ret = fdc_command(cmd, sizeof(cmd), out, len, result, sizeof(result));
+	ret = fdc_command(&ctx);
 	if (ret) {
 		printf("%s: fdc_command: %d\n", __func__, ret);
 		return ret;
 	}
 
-	print_fdc_status(__func__, result[0], result[1], result[2]);
+	print_fdc_status(__func__, &ctx.result.read_data.st);
 //	printf("%s: C %d H %d S %d N %d\n", __func__,
-//	       result[3], result[4], result[5], result[6]);
+//	       ctx.result.read_data.chs.c,
+//	       ctx.result.read_data.chs.h,
+//	       ctx.result.read_data.chs.s,
+//	       ctx.result.read_data.n);
 
 	if (fdc_int_pending()) {
-		ret = fdc_sense_int(status);
+		ret = fdc_sense_int(&status);
 		if (ret) {
 			printf("%s: fdc_sense_int: %d\n", __func__, ret);
 			return -1;
 		}
-		print_fdc_st0(__func__, status[0]);
-		printf("%s: pcn=%x\n", __func__, status[1]);
+		print_fdc_st0(__func__, &status.st0);
+		printf("%s: pcn=%x\n", __func__, status.pcn);
 	}
 	return 0;
 }
 
 int fdc_write(struct chs *chs, int last_sector, uint8_t *in, int len)
 {
-	uint8_t cmd[9], result[7], status[2];
+	struct fdc_ctx ctx = {
+		.cmdlen = sizeof(struct fdc_write_data_cmd),
+		.resultlen = sizeof(struct fdc_write_data_result),
+		.data = in,
+		.datalen = len,
+		.cmd.write_data.cmd = FDC_CMD_WRITE,
+		.cmd.write_data.mfm = 1,
+		.cmd.write_data.hds = chs->h,
+		.cmd.write_data.chs = *chs,
+		.cmd.write_data.n = 2,
+		.cmd.write_data.eot = last_sector,
+		.cmd.write_data.gpl = 0x2a,
+		.cmd.write_data.dtl = 0xff
+	};
+	struct fdc_sense_int_result status;
 	int ret;
 
-	cmd[0] = FDC_CMD_WRITE | 0x40;		// MFM + MT
-	cmd[1] = ((chs->h & 1) << 2);		// DSH
-	cmd[2] = chs->c;			// C
-	cmd[3] = (chs->h & 1);			// H
-	cmd[4] = chs->s;			// R
-	cmd[5] = 2;				// N 512 bytes
-	cmd[6] = last_sector;			// EOT
-	cmd[7] = 0x2a;				// GPL
-	cmd[8] = 0xff;				// DTL
-
-	ret = fdc_command(cmd, sizeof(cmd), in, len, result, sizeof(result));
+	ret = fdc_command(&ctx);
 	if (ret) {
 		printf("%s: fdc_command: %d\n", __func__, ret);
 		return ret;
 	}
 
-	print_fdc_status(__func__, result[0], result[1], result[2]);
-	printf("%s: C %d H %d S %d N %d\n", __func__,
-	       result[3], result[4], result[5], result[6]);
+	print_fdc_status(__func__, &ctx.result.write_data.st);
+//	printf("%s: C %d H %d S %d N %d\n", __func__,
+//	       ctx.result.write_data.chs.c,
+//	       ctx.result.write_data.chs.h,
+//	       ctx.result.write_data.chs.s,
+//	       ctx.result.write_data.n);
 
 	if (fdc_int_pending()) {
-		ret = fdc_sense_int(status);
+		ret = fdc_sense_int(&status);
 		if (ret) {
 			printf("%s: fdc_sense_int: %d\n", __func__, ret);
 			return ret;
 		}
-		print_fdc_st0(__func__, status[0]);
-		printf("%s: pcn=%x\n", __func__, status[1]);
+		print_fdc_st0(__func__, &status.st0);
+		printf("%s: pcn=%x\n", __func__, status.pcn);
 	}
 	return 0;
 }
@@ -1042,15 +1262,15 @@ int main()
 	DWT_Delay_ms(1);
 
 	puts("\n\n**** Boot done ****\n");
-	uint8_t status[2];
-	fdc_sense_int(status);
-	print_fdc_st0(__func__, status[0]);
-	fdc_sense_int(status);
-	print_fdc_st0(__func__, status[0]);
-	fdc_sense_int(status);
-	print_fdc_st0(__func__, status[0]);
-	fdc_sense_int(status);
-	print_fdc_st0(__func__, status[0]);
+	struct fdc_sense_int_result status;
+	fdc_sense_int(&status);
+	print_fdc_st0(__func__, &status.st0);
+	fdc_sense_int(&status);
+	print_fdc_st0(__func__, &status.st0);
+	fdc_sense_int(&status);
+	print_fdc_st0(__func__, &status.st0);
+	fdc_sense_int(&status);
+	print_fdc_st0(__func__, &status.st0);
 	fdc_dsel(2);
 	fdc_configure(1, 0, 0, 15, 0);
 //	fdc_specify(0, 0, 0, 0);
