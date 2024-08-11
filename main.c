@@ -948,7 +948,7 @@ static void print_fdc_st0(const char *prefix, struct fdc_st0 *st0)
 {
 	static const char *ics[] = { "Normal Execution", "Abnormal Termination", "Invalid Command", "Abnormal Termination (Polling)" };
 
-	if ((st0->ic >> 6) == 0)
+	if (st0->ic == 0)
 		return;
 
 	printf("%s: ST0 IC=%s %s%sHead %d DSEL %d\n", prefix, ics[st0->ic],
@@ -960,7 +960,7 @@ static void print_fdc_st0(const char *prefix, struct fdc_st0 *st0)
 
 static void print_fdc_status(const char *prefix, struct fdc_st *st)
 {
-	if ((st->st0.ic >> 6) == 0)
+	if (st->st0.ic == 0)
 		return;
 
 	print_fdc_st0(prefix, &st->st0);
