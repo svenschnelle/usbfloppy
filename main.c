@@ -1053,7 +1053,6 @@ void fdc_seek(int track)
 //	printf("%s: pcn=%x\n", __func__, status.pcn);
 }
 
-
 void fdc_recalibrate(void)
 {
 	struct fdc_ctx ctx = {
@@ -1161,7 +1160,6 @@ int fdc_read(struct chs *chs, int last_sector, uint8_t *out, int len)
 		printf("%s: fdc_command: %d\n", __func__, ret);
 		return ret;
 	}
-
 	print_fdc_status(__func__, &ctx.result.read_data.st);
 //	printf("%s: C %d H %d S %d N %d\n", __func__,
 //	       ctx.result.read_data.chs.c,
