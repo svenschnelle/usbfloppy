@@ -1176,7 +1176,7 @@ int fdc_read(struct chs *chs, int last_sector, uint8_t *out, int len)
 		print_fdc_st0(__func__, &status.st0);
 		printf("%s: pcn=%x\n", __func__, status.pcn);
 	}
-	return 0;
+	return ctx.result.read_data.st.st0.ic != 0;
 }
 
 int fdc_write(struct chs *chs, int last_sector, uint8_t *in, int len)
@@ -1220,7 +1220,7 @@ int fdc_write(struct chs *chs, int last_sector, uint8_t *in, int len)
 		print_fdc_st0(__func__, &status.st0);
 		printf("%s: pcn=%x\n", __func__, status.pcn);
 	}
-	return 0;
+	return ctx.result.write_data.st.st0.ic != 0;
 }
 
 static void uart_init(void)
