@@ -790,8 +790,8 @@ static int fdc_result_phase(uint8_t *out, int len)
 		}
 		n++;
 	}
-//	if (n < len)
-//		printf("%s: short read: %d out of %d bytes\n", __func__, n, len);
+	if (n < len)
+		printf("%s: short read: %d out of %d bytes\n", __func__, n, len);
 	return n;
 }
 
