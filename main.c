@@ -97,6 +97,12 @@ uint32_t Mass_Memory_Size[2];
 uint32_t Mass_Block_Size[2];
 uint32_t Mass_Block_Count[2];
 
+#define MAX_SECTORS_PER_TRACK 15
+
+static uint8_t track_cache[MAX_SECTORS_PER_TRACK * 2 * 512];
+static int current_track = -1;
+static int sectors_per_track = 15;
+
 struct chs {
 	uint8_t c;
 	uint8_t h;
@@ -326,11 +332,6 @@ static struct gpio_config_data gpio_config[] = {
 	{ GPIOA, { PIN_IN,  GPIO_Speed_50MHz, GPIO_Mode_IPU }},
 	{ GPIOB, { PIN_TX1, GPIO_Speed_50MHz, GPIO_Mode_AF_PP }},
 };
-
-#define SECTORS_PER_TRACK 15
-
-static uint8_t track_cache[SECTORS_PER_TRACK * 2 * 512];
-static int current_track = -1;
 
 size_t strlen(const char *s)
 {
@@ -1318,9 +1319,9 @@ uint16_t MAL_GetStatus (uint8_t lun)
 
 static void lba_to_chs(int lba, struct chs *chs)
 {
-	chs->h = (lba % (SECTORS_PER_TRACK * 2)) / SECTORS_PER_TRACK;
-	chs->c = lba / (SECTORS_PER_TRACK * 2);
-	chs->s = lba % SECTORS_PER_TRACK + 1;
+	chs->h = (lba % (sectors_per_track * 2)) / sectors_per_track;
+	chs->c = lba / (sectors_per_track * 2);
+	chs->s = lba % sectors_per_track + 1;
 }
 
 uint16_t MAL_StartWrite(uint8_t lun, int start_lba, int num_sectors)
@@ -1344,9 +1345,9 @@ int MAL_Write(uint8_t lun, uint32_t offset, uint32_t *buf, uint16_t _len, int la
 	       chs.c, chs.h, chs.s, _len);
 	fdc_dsel(2);
 
-	memcpy(&track_cache[offset % (512 * 15)], buf, _len);
+	memcpy(&track_cache[offset % (512 * sectors_per_track)], buf, _len);
 
-	if (chs.s == SECTORS_PER_TRACK || last) {
+	if (chs.s == sectors_per_track || last) {
 		printf("%s: writing C %d H %d S %d - %d%s\n", __func__,
 		       write_start.c, write_start.h, write_start.s, chs.s, last ? " LAST" : "");
 
@@ -1370,12 +1371,12 @@ int MAL_Read(uint8_t lun, uint32_t offset, uint32_t *buf, uint16_t len)
 	if (current_track != chs.c) {
 		chs.s = 1;
 		chs.h = 0;
-		ret = fdc_read(&chs, SECTORS_PER_TRACK, track_cache, sizeof(track_cache));
+		ret = fdc_read(&chs, sectors_per_track, track_cache, sizeof(track_cache));
 		if (ret)
 			return ret;
 		current_track = chs.c;
 	}
 
-	memcpy(buf, &track_cache[offset % (512 * 15 * 2)], len);
+	memcpy(buf, &track_cache[offset % (512 * sectors_per_track * 2)], len);
 	return 0;
 }
