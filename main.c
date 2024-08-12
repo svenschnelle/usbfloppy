@@ -88,9 +88,6 @@
 #define FDC_DATA_RATE_FM_150KBPS	1
 #define FDC_DATA_RATE_FM_125KBPS	2
 
-#define FDC_DATA_RATE_300KBPS	0
-#define FDC_DATA_RATE_250KBPS	0
-
 #define MOTOR_TIMEOUT 30
 
 static int motor_timer;
