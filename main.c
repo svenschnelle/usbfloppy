@@ -982,6 +982,7 @@ void fdc_readid(void)
 	struct fdc_ctx ctx = {
 		.cmdlen = sizeof(struct fdc_readid_cmd),
 		.resultlen = sizeof(struct fdc_readid_result),
+		.cmd.readid.ds = floppy_dsel,
 		.cmd.readid.cmd = FDC_CMD_READ_ID,
 		.cmd.readid.mfm = 1
 	};
@@ -1054,7 +1055,8 @@ void fdc_recalibrate(void)
 {
 	struct fdc_ctx ctx = {
 		.cmdlen = sizeof(struct fdc_recalibrate_cmd),
-		.cmd.recalibrate.cmd = FDC_CMD_RECALIBRATE
+		.cmd.recalibrate.cmd = FDC_CMD_RECALIBRATE,
+		.cmd.recalibrate.ds = floppy_dsel,
 	};
 	struct fdc_sense_int_result status;
 	int ret;
@@ -1138,6 +1140,7 @@ int fdc_read(struct chs *chs, int last_sector, uint8_t *out, int len)
 	struct fdc_ctx ctx = { .cmd.read_data.cmd = FDC_CMD_READ_DATA,
 		.cmdlen = sizeof(struct fdc_read_data_cmd),
 		.resultlen = sizeof(struct fdc_read_data_result),
+		.cmd.read_data.ds = floppy_dsel,
 		.data = out,
 		.datalen = len,
 		.cmd.read_data.mt = 1,
@@ -1183,6 +1186,7 @@ int fdc_write(struct chs *chs, int last_sector, uint8_t *in, int len)
 		.resultlen = sizeof(struct fdc_write_data_result),
 		.data = in,
 		.datalen = len,
+		.cmd.write_data.ds = floppy_dsel,
 		.cmd.write_data.cmd = FDC_CMD_WRITE,
 		.cmd.write_data.mfm = 1,
 		.cmd.write_data.hds = chs->h,
