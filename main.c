@@ -506,32 +506,6 @@ int printf(const char *fmt, ...)
 	return 0;// FIXME
 }
 
-static void prnibble(uint8_t nibble)
-{
-	if (nibble > 9)
-		putchar(0x61 + nibble - 10);
-	else
-		putchar(0x30 + nibble);
-}
-
-static void prbyte(uint8_t byte)
-{
-	prnibble(byte >> 4);
-	prnibble(byte & 0xf);
-}
-
-void hexdump(char *prefix, void *buf, size_t len)
-{
-	for (unsigned int i = 0; i < len; i++) {
-		if (!(i & 0xf))
-			printf("\n%s %x: ", prefix, i);
-		prbyte(((uint8_t *)buf)[i]);
-		putchar(' ');
-	}
-	puts("\n");
-}
-
-
 char *strchr(const char *s, int c)
 {
 	while (*s) {
@@ -926,7 +900,7 @@ static int fdc_command(struct fdc_ctx *ctx)
 	return 0;
 }
 
-int fdc_sense_int(struct fdc_sense_int_result *result)
+static int fdc_sense_int(struct fdc_sense_int_result *result)
 {
 	struct fdc_ctx ctx = {
 		.cmdlen = sizeof(struct fdc_sense_int_cmd),
@@ -977,41 +951,7 @@ static void print_fdc_status(const char *prefix, struct fdc_st *st)
 	       st->st2.md ? "Missing DAM " : "");
 }
 
-void fdc_readid(void)
-{
-	static const int sector_sizes[8] = { 128, 256, 512, 1024, 2048, 4096, 8192, 16384 };
-	struct fdc_ctx ctx = {
-		.cmdlen = sizeof(struct fdc_readid_cmd),
-		.resultlen = sizeof(struct fdc_readid_result),
-		.cmd.readid.ds = floppy_dsel,
-		.cmd.readid.cmd = FDC_CMD_READ_ID,
-		.cmd.readid.mfm = 1
-	};
-	struct fdc_sense_int_result status;
-	int ret;
-
-	ret = fdc_command(&ctx);
-	if (ret) {
-		printf("%s: fdc_command: %d\n", __func__, ret);
-		return;
-	}
-
-	ret = fdc_sense_int(&status);
-	if (ret) {
-		printf("%s: fdc_sense_int: %d\n", __func__, ret);
-		return;
-	}
-
-	print_fdc_status(__func__, &ctx.result.readid.st);
-
-	printf("%s: Cyl %d Head %d Sector %d %d bytes/sector\n", __func__,
-	       ctx.result.readid.chs.c,
-	       ctx.result.readid.chs.h,
-	       ctx.result.readid.chs.s,
-	       sector_sizes[ctx.result.readid.n & 7]);
-}
-
-void fdc_dsel(int dsel)
+static void fdc_dsel(int dsel)
 {
 	static const uint8_t values[] = { 0x0c, 0x1c, 0x2d, 0x4e, 0x8f };
 	if (dsel)
@@ -1025,34 +965,7 @@ void fdc_dsel(int dsel)
 		DWT_Delay_ms(500);
 }
 
-void fdc_seek(int track)
-{
-	struct fdc_ctx ctx = {
-		.cmdlen = sizeof(struct fdc_seek_cmd),
-		.cmd.seek.cmd = FDC_CMD_SEEK,
-		.cmd.seek.ncn = track
-	};
-	struct fdc_sense_int_result status;
-	int ret;
-
-	ret = fdc_command(&ctx);
-	if (ret) {
-		printf("%s: fdc_command: %d\n", __func__, ret);
-		return;
-	}
-
-	fdc_wait_interrupt();
-
-	ret = fdc_sense_int(&status);
-	if (ret) {
-		printf("%s: fdc_sense_int: %d\n", __func__, ret);
-		return;
-	}
-	print_fdc_st0(__func__, &status.st0);
-//	printf("%s: pcn=%x\n", __func__, status.pcn);
-}
-
-void fdc_recalibrate(void)
+static void fdc_recalibrate(void)
 {
 	struct fdc_ctx ctx = {
 		.cmdlen = sizeof(struct fdc_recalibrate_cmd),
@@ -1077,7 +990,7 @@ void fdc_recalibrate(void)
 	printf("%s: pcn=%x\n", __func__, status.pcn);
 }
 
-void fdc_specify(int srt, int hut, int hlt, int nd)
+static void fdc_specify(int srt, int hut, int hlt, int nd)
 {
 	struct fdc_ctx ctx = {
 		.cmdlen = sizeof(struct fdc_specify_cmd),
@@ -1105,7 +1018,7 @@ void fdc_specify(int srt, int hut, int hlt, int nd)
 	printf("%s: pcn=%x\n", __func__, status.pcn);
 }
 
-void fdc_configure(int eis, int efifo, int poll, int threshold, int pretrk)
+static void fdc_configure(int eis, int efifo, int poll, int threshold, int pretrk)
 {
 	struct fdc_ctx ctx = {
 		.cmdlen = sizeof(struct fdc_configure_cmd),
@@ -1136,7 +1049,7 @@ void fdc_configure(int eis, int efifo, int poll, int threshold, int pretrk)
 	}
 }
 
-int fdc_read(struct chs *chs, int last_sector, uint8_t *out, int len)
+static int fdc_read(struct chs *chs, int last_sector, uint8_t *out, int len)
 {
 	struct fdc_ctx ctx = { .cmd.read_data.cmd = FDC_CMD_READ_DATA,
 		.cmdlen = sizeof(struct fdc_read_data_cmd),
@@ -1180,7 +1093,7 @@ int fdc_read(struct chs *chs, int last_sector, uint8_t *out, int len)
 	return ctx.result.read_data.st.st0.ic != 0;
 }
 
-int fdc_write(struct chs *chs, int last_sector, uint8_t *in, int len)
+static int fdc_write(struct chs *chs, int last_sector, uint8_t *in, int len)
 {
 	struct fdc_ctx ctx = {
 		.cmdlen = sizeof(struct fdc_write_data_cmd),
